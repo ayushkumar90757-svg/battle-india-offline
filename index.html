@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
+  <meta name="description" content="Battle India Offline - 3D Action Battle Royale Shooting Game">
+  <title>Battle India Offline</title>
+  <link rel="stylesheet" href="./src/style.css">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" type="image/svg+xml" href="./icon.svg">
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+  </script>
+</head>
+<body>
+  <!-- 3D WebGL Canvas Viewport -->
+  <div id="game-canvas-container"></div>
+
+  <!-- Loading Splash Screen -->
+  <div id="loading-screen">
+    <div class="loading-logo-box">
+      <div class="brand-badge">DESI COMMANDO TACTICAL</div>
+      <h1 class="game-title">BATTLE INDIA</h1>
+      <div class="game-subtitle">OFFLINE BATTLE ROYALE</div>
+    </div>
+    <div class="loading-bar-container">
+      <div class="loading-bar-fill"></div>
+    </div>
+    <p style="margin-top: 12px; font-size: 12px; color: rgba(255,255,255,0.6);">Loading Island Assets & AI Bots...</p>
+  </div>
+
+  <!-- Main Menu -->
+  <div id="main-menu">
+    <div class="menu-header">
+      <div>
+        <div class="brand-badge">100% OFFLINE ACTION</div>
+        <h1 class="game-title">BATTLE INDIA</h1>
+        <div class="game-subtitle">सर्वे भवन्तु सुखिनः • SURVIVE TO THE END</div>
+      </div>
+      <div class="menu-version-pill">v1.0.0 • 60 FPS ENGINE</div>
+    </div>
+
+    <div class="menu-center-content">
+      <div class="menu-features-list">
+        <div class="feature-item">
+          <span>🏝️</span>
+          <div><strong>Isle of Shanti:</strong> 300m tactical battleground with outposts, villages, and shipping depots.</div>
+        </div>
+        <div class="feature-item">
+          <span>🤖</span>
+          <div><strong>20 Offline AI Bots:</strong> Smart tactical enemies that flank, seek safe zones, and loot.</div>
+        </div>
+        <div class="feature-item">
+          <span>⚡</span>
+          <div><strong>Indus Arsenal:</strong> Kavach-AR, Garuda-SMG, Trishul-12, Brahmos Sniper & Agni Pistol.</div>
+        </div>
+      </div>
+
+      <div class="menu-actions-stack">
+        <button id="btn-menu-play" class="menu-btn menu-btn-play">
+          <span>⚔️</span> QUICK MATCH
+        </button>
+        <button id="btn-menu-practice" class="menu-btn menu-btn-practice">
+          <span>🎯</span> PRACTICE RANGE
+        </button>
+        <button id="btn-menu-settings" class="menu-btn menu-btn-secondary">
+          <span>⚙️</span> SETTINGS
+        </button>
+        <button id="btn-menu-controls" class="menu-btn menu-btn-secondary">
+          <span>🎮</span> CONTROLS GUIDE
+        </button>
+        <button id="btn-menu-exit" class="menu-btn menu-btn-secondary" style="opacity: 0.7;">
+          <span>🚪</span> EXIT
+        </button>
+      </div>
+    </div>
+
+    <div class="menu-footer">
+      <span>Offline Single-Player 3D Shooter • Android & Desktop Ready</span>
+      <span>No Internet Connection Required</span>
+    </div>
+  </div>
+
+  <!-- In-Game HUD -->
+  <div id="hud-layer" style="display: none;">
+    <!-- Top Bar: Minimap, Match Stats, Pause -->
+    <div class="hud-top-bar">
+      <!-- Radar Minimap -->
+      <div class="minimap-container">
+        <canvas id="minimap-canvas" width="125" height="125"></canvas>
+      </div>
+
+      <!-- Center Status -->
+      <div class="hud-top-center">
+        <div class="hud-match-counters">
+          <div class="counter-item counter-alive">
+            <span>👥 ALIVE:</span>
+            <span id="hud-alive-count">21</span>
+          </div>
+          <div class="counter-item counter-kills">
+            <span>💀 KILLS:</span>
+            <span id="hud-kill-count">0</span>
+          </div>
+          <div class="counter-item counter-zone">
+            <span>⏱️ ZONE:</span>
+            <span id="hud-zone-timer">00:45</span>
+          </div>
+        </div>
+        <div id="hud-zone-alert" class="zone-alert-banner">WARNING: SAFE ZONE SHRINKING!</div>
+      </div>
+
+      <!-- Right Controls: Pause & Killfeed -->
+      <div class="hud-top-right">
+        <button id="btn-hud-pause" class="hud-btn-pause">⏸️</button>
+        <div id="hud-kill-feed"></div>
+      </div>
+    </div>
+
+    <!-- Center Reticles -->
+    <div id="hud-crosshair" class="crosshair-container">
+      <div class="crosshair-line crosshair-top"></div>
+      <div class="crosshair-line crosshair-bottom"></div>
+      <div class="crosshair-line crosshair-left"></div>
+      <div class="crosshair-line crosshair-right"></div>
+      <div class="crosshair-dot"></div>
+    </div>
+
+    <!-- Hitmarker overlay -->
+    <div id="hud-hitmarker">
+      <div class="hm-tick hm-top"></div>
+      <div class="hm-tick hm-bottom"></div>
+      <div class="hm-tick hm-left"></div>
+      <div class="hm-tick hm-right"></div>
+    </div>
+
+    <!-- Sniper Scope Overlay -->
+    <div id="hud-sniper-scope">
+      <div class="scope-reticle-circle">
+        <div class="scope-reticle-h"></div>
+        <div class="scope-reticle-v"></div>
+      </div>
+    </div>
+
+    <!-- Loot Prompt -->
+    <div id="hud-loot-prompt">
+      <span>[TAP / E]</span> PICK UP WEAPON
+    </div>
+
+    <!-- Bottom Bar: Health, Armor, Weapon & Ammo -->
+    <div class="hud-bottom-bar">
+      <div class="hud-player-status">
+        <!-- Health Bar -->
+        <div class="status-bar-row">
+          <span style="color: #2ecc71;">➕ HP</span>
+          <div class="status-bar-track">
+            <div id="hud-hp-fill" class="status-bar-fill-hp"></div>
+          </div>
+          <span id="hud-hp-text">100 / 100</span>
+        </div>
+
+        <!-- Armor Bar -->
+        <div class="status-bar-row">
+          <span style="color: #3498db;">🛡️ AP</span>
+          <div class="status-bar-track">
+            <div id="hud-armor-fill" class="status-bar-fill-armor"></div>
+          </div>
+          <span id="hud-armor-text">50</span>
+        </div>
+      </div>
+
+      <!-- Weapon & Ammo Card -->
+      <div class="hud-weapon-card">
+        <div id="hud-reload-ring" class="hud-reload-indicator"></div>
+        <div class="weapon-card-info">
+          <div id="hud-weapon-name">KAVACH-AR</div>
+          <div class="hud-ammo-display">
+            <span id="hud-ammo-current">30</span>
+            <span id="hud-ammo-reserve">/ 120</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Touch Controls Layer -->
+  <div id="touch-controls-layer" style="display: none;">
+    <!-- Left Joystick Surface -->
+    <div id="joystick-zone">
+      <div id="joystick-base">
+        <div id="joystick-knob"></div>
+      </div>
+    </div>
+
+    <!-- Right Camera Look Surface -->
+    <div id="look-zone"></div>
+
+    <!-- Action Buttons -->
+    <button id="btn-touch-fire" class="touch-btn">🔥</button>
+    <button id="btn-touch-aim" class="touch-btn">🎯</button>
+    <button id="btn-touch-jump" class="touch-btn">⬆️</button>
+    <button id="btn-touch-crouch" class="touch-btn">⬇️</button>
+    <button id="btn-touch-reload" class="touch-btn">🔄</button>
+    <button id="btn-touch-medkit" class="touch-btn">
+      <span>🩹</span>
+      <span id="hud-medkit-badge" class="touch-badge">2</span>
+      <div id="hud-medkit-bar" class="medkit-use-bar"></div>
+    </button>
+
+    <!-- Top Weapon Slot Switchers -->
+    <div class="touch-slots-bar">
+      <div id="touch-slot-1" class="touch-slot-pill active">1: PRIMARY</div>
+      <div id="touch-slot-2" class="touch-slot-pill">2: SECONDARY</div>
+      <div id="touch-slot-3" class="touch-slot-pill">3: PISTOL</div>
+    </div>
+  </div>
+
+  <!-- Pause Menu Modal -->
+  <div id="pause-menu" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 class="modal-title">MATCH PAUSED</h2>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 10px;">
+        <button id="btn-pause-resume" class="menu-btn menu-btn-play" style="font-size: 16px; padding: 12px;">RESUME</button>
+        <button id="btn-pause-restart" class="menu-btn menu-btn-secondary">RESTART MATCH</button>
+        <button id="btn-pause-settings" class="menu-btn menu-btn-secondary">SETTINGS</button>
+        <button id="btn-pause-quit" class="menu-btn menu-btn-secondary" style="color: #e74c3c;">QUIT TO MAIN MENU</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settings-modal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 class="modal-title">GAME SETTINGS</h2>
+        <button id="btn-settings-close" class="btn-close">✕</button>
+      </div>
+
+      <div class="settings-group">
+        <div class="setting-row">
+          <span>Graphics Quality:</span>
+          <select id="set-graphics">
+            <option value="low">Low (Optimal for 2-4GB RAM)</option>
+            <option value="medium">Medium (Standard)</option>
+            <option value="high">High (Soft Shadows)</option>
+          </select>
+        </div>
+
+        <div class="setting-row">
+          <span>Enemy Bot Count:</span>
+          <select id="set-bot-count">
+            <option value="5">5 Bots (Lite)</option>
+            <option value="10">10 Bots (Balanced)</option>
+            <option value="15">15 Bots (Standard)</option>
+            <option value="20" selected>20 Bots (Full Battle Royale)</option>
+          </select>
+        </div>
+
+        <div class="setting-row">
+          <span>Bot Difficulty:</span>
+          <select id="set-bot-diff">
+            <option value="recruit">Recruit (Casual)</option>
+            <option value="soldier" selected>Soldier (Balanced)</option>
+            <option value="veteran">Veteran (Hardcore)</option>
+          </select>
+        </div>
+
+        <div class="setting-row">
+          <span>Aim Sensitivity:</span>
+          <div class="setting-slider-box">
+            <input type="range" id="set-sensitivity" min="0.2" max="3.0" step="0.1" value="1.0">
+            <span id="val-sensitivity">1.0x</span>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <span>Master Volume:</span>
+          <input type="range" id="set-master-vol" min="0" max="1" step="0.05" value="0.8">
+        </div>
+
+        <div class="setting-row">
+          <span>SFX Volume:</span>
+          <input type="range" id="set-sfx-vol" min="0" max="1" step="0.05" value="0.9">
+        </div>
+
+        <div class="setting-row">
+          <span>Invert Camera Y-Axis:</span>
+          <input type="checkbox" id="set-invert-y">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Controls Guide Modal -->
+  <div id="controls-modal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 520px;">
+      <div class="modal-header">
+        <h2 class="modal-title">CONTROLS GUIDE</h2>
+        <button id="btn-controls-close" class="btn-close">✕</button>
+      </div>
+
+      <table class="controls-table">
+        <thead>
+          <tr>
+            <th>Action</th>
+            <th>Desktop (Keyboard & Mouse)</th>
+            <th>Mobile Touch</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Move</strong></td>
+            <td>W, A, S, D (Left / Right Never Inverted)</td>
+            <td>Left Virtual Joystick</td>
+          </tr>
+          <tr>
+            <td><strong>Aim / Look</strong></td>
+            <td>Mouse Drag / Pointer Lock</td>
+            <td>Right Screen Swipe</td>
+          </tr>
+          <tr>
+            <td><strong>Shoot</strong></td>
+            <td>Left Mouse Button</td>
+            <td>Fire Button 🔥</td>
+          </tr>
+          <tr>
+            <td><strong>Aim Down Sights (ADS)</strong></td>
+            <td>Right Mouse Button</td>
+            <td>Scope Button 🎯</td>
+          </tr>
+          <tr>
+            <td><strong>Jump</strong></td>
+            <td>Spacebar</td>
+            <td>Jump Button ⬆️</td>
+          </tr>
+          <tr>
+            <td><strong>Crouch</strong></td>
+            <td>C key</td>
+            <td>Crouch Button ⬇️</td>
+          </tr>
+          <tr>
+            <td><strong>Reload</strong></td>
+            <td>R key</td>
+            <td>Reload Button 🔄</td>
+          </tr>
+          <tr>
+            <td><strong>Heal Medkit</strong></td>
+            <td>F or 4 key</td>
+            <td>Medkit Button 🩹</td>
+          </tr>
+          <tr>
+            <td><strong>Switch Weapon</strong></td>
+            <td>1, 2, 3 keys</td>
+            <td>Top Slot Switch Pills</td>
+          </tr>
+          <tr>
+            <td><strong>Loot Item</strong></td>
+            <td>E key / Walk Over</td>
+            <td>Tap Loot Banner</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Results Screen Modal -->
+  <div id="results-modal" class="modal-overlay">
+    <div class="modal-card results-card">
+      <h2 id="results-title" class="results-title victory">CHAMPION OF BHARAT!</h2>
+      <div id="results-rank" class="results-rank">#1 VICTORY ROYALE</div>
+
+      <div class="results-grid">
+        <div class="result-stat-box">
+          <div class="stat-label">Eliminations</div>
+          <div id="results-kills" class="stat-val" style="color: #ff9933;">0</div>
+        </div>
+        <div class="result-stat-box">
+          <div class="stat-label">Damage</div>
+          <div id="results-damage" class="stat-val" style="color: #e74c3c;">0</div>
+        </div>
+        <div class="result-stat-box">
+          <div class="stat-label">Survival Time</div>
+          <div id="results-time" class="stat-val" style="color: #2ecc71;">00:00</div>
+        </div>
+      </div>
+
+      <div class="results-buttons">
+        <button id="btn-results-play-again" class="menu-btn menu-btn-play" style="flex: 1; font-size: 15px;">PLAY AGAIN</button>
+        <button id="btn-results-menu" class="menu-btn menu-btn-secondary" style="flex: 1;">MAIN MENU</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Application Entry Point -->
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

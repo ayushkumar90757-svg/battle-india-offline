@@ -1,0 +1,9 @@
+{
+  "appId": "com.battleindia.offline",
+  "appName": "Battle India Offline",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  }
+}

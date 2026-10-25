@@ -1,0 +1,912 @@
+/* style.css - Clean, responsive mobile-first UI for Battle India Offline */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #000000;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #ffffff;
+}
+
+#game-canvas-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+#game-canvas-container canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ==================== LOADING SCREEN ==================== */
+#loading-screen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at center, #1e2b1f 0%, #0d130e 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  transition: opacity 0.5s ease;
+}
+
+.loading-logo-box {
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+.brand-badge {
+  display: inline-block;
+  padding: 4px 14px;
+  background: #ff9933;
+  color: #000;
+  font-weight: 900;
+  font-size: 13px;
+  letter-spacing: 2px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.game-title {
+  font-size: 38px;
+  font-weight: 900;
+  letter-spacing: 3px;
+  color: #ffffff;
+  text-shadow: 0 4px 15px rgba(0,0,0,0.8);
+}
+
+.game-subtitle {
+  font-size: 14px;
+  color: #138808;
+  letter-spacing: 4px;
+  font-weight: 700;
+}
+
+.loading-bar-container {
+  width: 280px;
+  height: 8px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 15px;
+}
+
+.loading-bar-fill {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #ff9933, #ffffff, #138808);
+  animation: loadAnim 1.2s infinite ease-in-out;
+}
+
+@keyframes loadAnim {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* ==================== MAIN MENU ==================== */
+#main-menu {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(14,20,15,0.92) 0%, rgba(20,28,34,0.88) 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 30px 45px;
+  z-index: 50;
+}
+
+.menu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.menu-version-pill {
+  background: rgba(255,255,255,0.1);
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.menu-center-content {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.menu-features-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 360px;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255,255,255,0.06);
+  padding: 10px 14px;
+  border-radius: 8px;
+  border-left: 3px solid #ff9933;
+  font-size: 13px;
+}
+
+.menu-actions-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 260px;
+}
+
+.menu-btn {
+  padding: 14px 20px;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  transition: transform 0.1s, filter 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.menu-btn:active {
+  transform: scale(0.97);
+}
+
+.menu-btn-play {
+  background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+  font-size: 20px;
+  padding: 18px 24px;
+  border: 2px solid #f39c12;
+}
+
+.menu-btn-practice {
+  background: linear-gradient(135deg, #27ae60 0%, #1e8449 100%);
+  border: 1px solid #2ecc71;
+}
+
+.menu-btn-secondary {
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.25);
+}
+
+.menu-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: rgba(255,255,255,0.5);
+}
+
+/* ==================== IN-GAME HUD ==================== */
+#hud-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* Top bar: Minimap, Compass, Zone Alert, Alive count */
+.hud-top-bar {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  pointer-events: none;
+}
+
+.minimap-container {
+  width: 125px;
+  height: 125px;
+  border-radius: 50%;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+  border: 2px solid rgba(255,255,255,0.6);
+  overflow: hidden;
+  background: #000;
+  pointer-events: auto;
+}
+
+#minimap-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.hud-top-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.hud-match-counters {
+  display: flex;
+  align-items: center;
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(4px);
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.2);
+  gap: 16px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.counter-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.counter-alive { color: #ffcc00; }
+.counter-kills { color: #e74c3c; }
+.counter-zone { color: #00e1d9; }
+
+.zone-alert-banner {
+  background: rgba(231, 76, 60, 0.85);
+  color: #fff;
+  font-weight: 900;
+  font-size: 12px;
+  letter-spacing: 1px;
+  padding: 4px 16px;
+  border-radius: 4px;
+  animation: pulseZone 1s infinite alternate;
+  display: none;
+}
+
+@keyframes pulseZone {
+  0% { transform: scale(0.96); opacity: 0.8; }
+  100% { transform: scale(1.02); opacity: 1.0; }
+}
+
+.hud-top-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.hud-btn-pause {
+  background: rgba(0,0,0,0.6);
+  border: 1px solid rgba(255,255,255,0.3);
+  color: #fff;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  font-size: 18px;
+  cursor: pointer;
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#hud-kill-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 250px;
+}
+
+.kill-feed-entry {
+  background: rgba(0,0,0,0.7);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: opacity 0.3s;
+}
+
+.kill-feed-entry.fade-out {
+  opacity: 0;
+}
+
+.kill-feed-entry .killer.you {
+  color: #ffcc00;
+}
+
+.kill-feed-entry .victim {
+  color: #e74c3c;
+}
+
+.kill-feed-entry .weapon-tag {
+  color: #95a5a6;
+}
+
+/* Crosshairs & Center */
+.crosshair-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.crosshair-line {
+  position: absolute;
+  background: rgba(255,255,255,0.9);
+  box-shadow: 0 0 2px rgba(0,0,0,0.8);
+}
+
+.crosshair-top { width: 2px; height: 10px; top: -14px; }
+.crosshair-bottom { width: 2px; height: 10px; bottom: -14px; }
+.crosshair-left { height: 2px; width: 10px; left: -14px; }
+.crosshair-right { height: 2px; width: 10px; right: -14px; }
+.crosshair-dot { width: 4px; height: 4px; background: #ffcc00; border-radius: 50%; }
+
+/* Hitmarker */
+#hud-hitmarker {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(45deg);
+  width: 24px;
+  height: 24px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.05s ease;
+}
+
+#hud-hitmarker.active {
+  opacity: 1;
+}
+
+.hm-tick {
+  position: absolute;
+  background: #ffffff;
+}
+
+#hud-hitmarker.headshot .hm-tick {
+  background: #e74c3c;
+}
+
+.hm-top { width: 2px; height: 7px; top: 0; left: 11px; }
+.hm-bottom { width: 2px; height: 7px; bottom: 0; left: 11px; }
+.hm-left { height: 2px; width: 7px; top: 11px; left: 0; }
+.hm-right { height: 2px; width: 7px; top: 11px; right: 0; }
+
+/* Sniper Scope Overlay */
+#hud-sniper-scope {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at center, transparent 38%, rgba(0,0,0,0.98) 42%);
+  pointer-events: none;
+}
+
+.scope-reticle-circle {
+  width: min(75vh, 75vw);
+  height: min(75vh, 75vw);
+  border-radius: 50%;
+  border: 2px solid rgba(0, 255, 200, 0.5);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scope-reticle-h {
+  position: absolute;
+  width: 100%;
+  height: 1px;
+  background: rgba(0, 255, 200, 0.6);
+}
+
+.scope-reticle-v {
+  position: absolute;
+  height: 100%;
+  width: 1px;
+  background: rgba(0, 255, 200, 0.6);
+}
+
+/* Loot Prompt */
+#hud-loot-prompt {
+  position: absolute;
+  bottom: 120px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.75);
+  border: 1px solid #ffcc00;
+  padding: 8px 18px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #ffcc00;
+  display: none;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+#hud-loot-prompt span {
+  background: #ffcc00;
+  color: #000;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* Bottom HUD: Health & Weapon info */
+.hud-bottom-bar {
+  position: absolute;
+  bottom: 15px;
+  left: 20px;
+  right: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  pointer-events: none;
+}
+
+.hud-player-status {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 200px;
+}
+
+.status-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.status-bar-track {
+  flex: 1;
+  height: 10px;
+  background: rgba(0,0,0,0.6);
+  border-radius: 5px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.status-bar-fill-hp {
+  height: 100%;
+  background: #2ecc71;
+  width: 100%;
+  transition: width 0.2s, background-color 0.3s;
+}
+
+.status-bar-fill-armor {
+  height: 100%;
+  background: #3498db;
+  width: 50%;
+  transition: width 0.2s;
+}
+
+.hud-weapon-card {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px);
+  padding: 10px 18px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.25);
+}
+
+.weapon-card-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.hud-weapon-name {
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  color: #ff9933;
+}
+
+.hud-ammo-display {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.hud-ammo-current {
+  font-size: 26px;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.hud-ammo-reserve {
+  font-size: 14px;
+  color: rgba(255,255,255,0.6);
+  font-weight: 700;
+}
+
+.hud-reload-indicator {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: none;
+}
+
+/* ==================== TOUCH CONTROLS LAYER ==================== */
+#touch-controls-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 20;
+  pointer-events: none;
+}
+
+#joystick-zone {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 45%;
+  height: 60%;
+  pointer-events: auto;
+}
+
+#joystick-base {
+  position: absolute;
+  width: 110px;
+  height: 110px;
+  margin-left: -55px;
+  margin-top: -55px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+  border: 2px solid rgba(255,255,255,0.35);
+  display: none;
+  pointer-events: none;
+}
+
+#joystick-knob {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  top: 30px;
+  left: 30px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ffaa00, #d35400);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+  pointer-events: none;
+}
+
+#look-zone {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 55%;
+  height: 100%;
+  pointer-events: auto;
+}
+
+/* Mobile Action Buttons */
+.touch-btn {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.6);
+  border: 2px solid rgba(255,255,255,0.4);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 800;
+  pointer-events: auto;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+  transition: transform 0.08s, background-color 0.1s;
+}
+
+.touch-btn.active {
+  transform: scale(0.92);
+  background: rgba(255, 153, 51, 0.8) !important;
+  border-color: #ffcc00;
+}
+
+/* Primary Fire Button: Large right-hand thumb button */
+#btn-touch-fire {
+  bottom: 45px;
+  right: 55px;
+  width: 72px;
+  height: 72px;
+  background: radial-gradient(circle at center, #c0392b 0%, #78281f 100%);
+  border-color: #e74c3c;
+  font-size: 16px;
+}
+
+/* Aim Down Sights (ADS) button */
+#btn-touch-aim {
+  bottom: 130px;
+  right: 50px;
+  width: 52px;
+  height: 52px;
+  background: rgba(30, 40, 50, 0.7);
+}
+
+/* Jump button */
+#btn-touch-jump {
+  bottom: 75px;
+  right: 145px;
+  width: 52px;
+  height: 52px;
+}
+
+/* Crouch button */
+#btn-touch-crouch {
+  bottom: 20px;
+  right: 140px;
+  width: 48px;
+  height: 48px;
+}
+
+/* Reload button */
+#btn-touch-reload {
+  bottom: 135px;
+  right: 115px;
+  width: 46px;
+  height: 46px;
+}
+
+/* Medkit touch button */
+#btn-touch-medkit {
+  bottom: 70px;
+  left: 235px;
+  width: 48px;
+  height: 48px;
+  background: rgba(46, 204, 113, 0.35);
+  border-color: #2ecc71;
+}
+
+.touch-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #e74c3c;
+  color: #fff;
+  border-radius: 10px;
+  padding: 1px 5px;
+  font-size: 10px;
+}
+
+.medkit-use-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 4px;
+  background: #2ecc71;
+  width: 0%;
+  display: none;
+}
+
+/* Touch Weapon Slot Switchers */
+.touch-slots-bar {
+  position: absolute;
+  top: 15px;
+  left: 150px;
+  display: flex;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.touch-slot-pill {
+  padding: 6px 12px;
+  background: rgba(0,0,0,0.6);
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 14px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+  cursor: pointer;
+}
+
+.touch-slot-pill.active {
+  background: #ff9933;
+  color: #000;
+  border-color: #ffcc00;
+}
+
+/* ==================== MODALS (Settings, Pause, Results, Controls) ==================== */
+.modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(5px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+.modal-card {
+  background: #1a221b;
+  border: 1px solid rgba(255, 153, 51, 0.4);
+  border-radius: 14px;
+  padding: 24px 30px;
+  width: 90%;
+  max-width: 480px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255,255,255,0.15);
+  padding-bottom: 10px;
+}
+
+.modal-title {
+  font-size: 20px;
+  font-weight: 900;
+  color: #ff9933;
+  letter-spacing: 1px;
+}
+
+.btn-close {
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.settings-group {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: 50vh;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+.setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.setting-row select, .setting-row input[type="range"] {
+  background: #2a342c;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.3);
+  padding: 6px 10px;
+  border-radius: 6px;
+  outline: none;
+}
+
+.setting-row select {
+  font-size: 13px;
+}
+
+.setting-slider-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Results Screen Modal */
+.results-card {
+  text-align: center;
+  max-width: 420px;
+}
+
+.results-title.victory {
+  color: #ffcc00;
+  font-size: 26px;
+  text-shadow: 0 0 15px rgba(255, 204, 0, 0.6);
+}
+
+.results-title.defeat {
+  color: #e74c3c;
+  font-size: 26px;
+}
+
+.results-rank {
+  font-size: 22px;
+  font-weight: 900;
+  margin-top: 4px;
+}
+
+.results-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  margin: 15px 0;
+}
+
+.result-stat-box {
+  background: rgba(255,255,255,0.06);
+  padding: 12px;
+  border-radius: 8px;
+  border-top: 2px solid #ff9933;
+}
+
+.stat-label {
+  font-size: 10px;
+  color: rgba(255,255,255,0.6);
+  text-transform: uppercase;
+}
+
+.stat-val {
+  font-size: 20px;
+  font-weight: 900;
+  margin-top: 4px;
+}
+
+.results-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+/* Controls Guide Table */
+.controls-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.controls-table th, .controls-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  text-align: left;
+}
+
+.controls-table th {
+  color: #ff9933;
+}
