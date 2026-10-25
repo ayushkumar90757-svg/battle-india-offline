@@ -40,12 +40,17 @@ export class BotManager {
     localStorage.setItem('bio_bot_difficulty', diff);
   }
 
-  spawnMatchBots(player) {
-    // Clean up old bots
+  cleanup() {
     this.bots.forEach(b => {
       this.scene.remove(b.characterModel.group);
+      b.dispose?.();
     });
     this.bots = [];
+  }
+
+  spawnMatchBots(player) {
+    // Clean up old bots
+    this.cleanup();
 
     const totalToSpawn = this.botCount;
     const islandRadius = 110;

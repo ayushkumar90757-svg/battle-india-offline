@@ -29,6 +29,19 @@ export class WeaponModelGenerator {
     const mats = WeaponModelGenerator.getMaterials();
     const group = new THREE.Group();
 
+    // Add a muzzle point reference for projectile/tracer spawns and muzzle flash BEFORE building
+    const muzzlePoint = new THREE.Object3D();
+    muzzlePoint.name = 'muzzlePoint';
+    group.add(muzzlePoint);
+
+    // Muzzle flash mesh (normally invisible, toggled when firing)
+    const flashGeom = new THREE.ConeGeometry(0.06, 0.22, 5);
+    flashGeom.rotateX(Math.PI / 2);
+    const flashMesh = new THREE.Mesh(flashGeom, mats.muzzleFlash);
+    flashMesh.name = 'muzzleFlashMesh';
+    flashMesh.visible = false;
+    muzzlePoint.add(flashMesh);
+
     switch (weaponId) {
       case 'kavach_ar':
         WeaponModelGenerator._buildAR(group, mats);
@@ -47,19 +60,6 @@ export class WeaponModelGenerator {
         WeaponModelGenerator._buildPistol(group, mats);
         break;
     }
-
-    // Add a muzzle point reference for projectile/tracer spawns and muzzle flash
-    const muzzlePoint = new THREE.Object3D();
-    muzzlePoint.name = 'muzzlePoint';
-    group.add(muzzlePoint);
-
-    // Muzzle flash mesh (normally invisible, toggled when firing)
-    const flashGeom = new THREE.ConeGeometry(0.06, 0.22, 5);
-    flashGeom.rotateX(Math.PI / 2);
-    const flashMesh = new THREE.Mesh(flashGeom, mats.muzzleFlash);
-    flashMesh.name = 'muzzleFlashMesh';
-    flashMesh.visible = false;
-    muzzlePoint.add(flashMesh);
 
     group.castShadow = false;
     group.receiveShadow = false;

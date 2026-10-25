@@ -118,6 +118,7 @@ export class GameEngine {
       this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
       this.renderer.shadowMap.enabled = true;
       this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      this.renderer.shadowMap.needsUpdate = true;
       this.sunLight.castShadow = true;
       this.scene.fog.density = 0.003;
     }

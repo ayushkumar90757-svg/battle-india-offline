@@ -31,8 +31,13 @@ export class LootManager {
   }
 
   populateMap(spawnPoints = []) {
-    // Clear existing loot
+    // Clear and dispose existing loot
     this.lootItems.forEach(item => {
+      item.mesh.traverse(child => {
+        if (child.isMesh) {
+          child.geometry?.dispose();
+        }
+      });
       this.scene.remove(item.mesh);
     });
     this.lootItems = [];

@@ -11,6 +11,9 @@ export class Minimap {
   }
 
   addGunfireBlip(worldX, worldZ) {
+    if (this.gunfireBlips.length >= 25) {
+      this.gunfireBlips.shift();
+    }
     this.gunfireBlips.push({
       x: worldX,
       z: worldZ,

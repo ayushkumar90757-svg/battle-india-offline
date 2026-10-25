@@ -117,36 +117,44 @@ export class SafeZone {
   }
 
   update(delta, player, bots = []) {
-    const phase = this.phases[this.currentPhaseIndex];
-    if (!phase) return;
+    const phase = this.phases[Math.min(this.currentPhaseIndex, this.phases.length - 1)];
+    const isFinalStage = this.currentPhaseIndex >= this.phases.length;
 
-    this.timer -= delta;
+    if (!isFinalStage) {
+      this.timer -= delta;
 
-    if (this.state === 'WAITING') {
-      if (this.timer <= 0) {
-        // Transition to SHRINKING
-        this.state = 'SHRINKING';
-        this.timer = phase.shrink;
-        this.shrinkProgress = 0;
-        if (this.soundManager) {
-          this.soundManager.playZoneAlarm();
+      if (this.state === 'WAITING') {
+        if (this.timer <= 0) {
+          // Transition to SHRINKING
+          this.state = 'SHRINKING';
+          this.timer = phase.shrink;
+          this.shrinkProgress = 0;
+          if (this.soundManager) {
+            this.soundManager.playZoneAlarm();
+          }
+        }
+      } else if (this.state === 'SHRINKING') {
+        this.shrinkProgress = 1.0 - Math.max(0, this.timer / phase.shrink);
+
+        // Smooth cubic interpolation
+        const t = this.shrinkProgress;
+        const smoothT = t * t * (3 - 2 * t);
+
+        this.currentRadius = THREE.MathUtils.lerp(this.startRadius, this.targetRadius, smoothT);
+        this.currentCenter.lerpVectors(this.startCenter, this.targetCenter, smoothT);
+
+        if (this.timer <= 0) {
+          // Phase complete, advance to next phase
+          this.currentPhaseIndex++;
+          this._preparePhase(this.currentPhaseIndex);
         }
       }
-    } else if (this.state === 'SHRINKING') {
-      this.shrinkProgress = 1.0 - Math.max(0, this.timer / phase.shrink);
-
-      // Smooth cubic interpolation
-      const t = this.shrinkProgress;
-      const smoothT = t * t * (3 - 2 * t);
-
-      this.currentRadius = THREE.MathUtils.lerp(this.startRadius, this.targetRadius, smoothT);
-      this.currentCenter.lerpVectors(this.startCenter, this.targetCenter, smoothT);
-
-      if (this.timer <= 0) {
-        // Phase complete, advance to next phase
-        this.currentPhaseIndex++;
-        this._preparePhase(this.currentPhaseIndex);
-      }
+    } else {
+      // In final stage, zone is tight at center and maintains maximum danger
+      this.currentRadius = 5.0;
+      this.currentCenter.copy(this.targetCenter);
+      this.timer = 0;
+      this.state = 'FINAL';
     }
 
     // Update 3D mesh scale and position
@@ -161,11 +169,11 @@ export class SafeZone {
     // Subtle forcefield shimmer animation
     this.zoneMat.opacity = 0.22 + Math.sin(Date.now() * 0.004) * 0.08;
 
-    // Periodic damage tick (every 1.0s)
+    // Periodic damage tick (every 1.0s) - always continues ticking
     this.damageTimer += delta;
     if (this.damageTimer >= 1.0) {
       this.damageTimer = 0;
-      const dmg = phase.damage;
+      const dmg = isFinalStage ? 20 : phase.damage;
 
       // Check player
       if (player && player.isAlive && !this.isInsideSafeZone(player.position)) {

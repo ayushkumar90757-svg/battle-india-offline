@@ -177,13 +177,17 @@ export class CharacterModel {
     rightBoot.position.set(0, -0.62, 0.03);
     rightLegPivot.add(rightBoot);
 
-    // Performance: low shadow cost
+    // Performance: low shadow cost and save original material reference for hit flashes
     this.group.traverse(child => {
       if (child.isMesh) {
         child.castShadow = true;
         child.receiveShadow = false;
+        if (child.material !== mats.playerBadge) {
+          child.userData.originalMaterial = child.material;
+        }
       }
     });
+    this._flashTimeout = null;
   }
 
   setCrouching(crouch) {
@@ -198,14 +202,23 @@ export class CharacterModel {
   flashHit() {
     const mats = CharacterModel.getSharedMaterials();
     this.group.traverse(child => {
-      if (child.isMesh && child.material !== mats.playerBadge) {
-        const origMat = child.material;
+      if (child.isMesh && child.userData.originalMaterial) {
         child.material = mats.hitFlash;
-        setTimeout(() => {
-          child.material = origMat;
-        }, 65);
       }
     });
+
+    if (this._flashTimeout) {
+      clearTimeout(this._flashTimeout);
+    }
+
+    this._flashTimeout = setTimeout(() => {
+      this.group.traverse(child => {
+        if (child.isMesh && child.userData.originalMaterial) {
+          child.material = child.userData.originalMaterial;
+        }
+      });
+      this._flashTimeout = null;
+    }, 65);
   }
 
   updateAnimation(delta, moveSpeed, isGrounded = true, aimPitch = 0) {

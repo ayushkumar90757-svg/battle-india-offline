@@ -78,6 +78,14 @@ export class SoundManager {
     gunGain.connect(distFilter);
     distFilter.connect(this.sfxGain);
 
+    // Auto-disconnect audio nodes after decay to prevent graph memory leaks
+    setTimeout(() => {
+      try {
+        gunGain.disconnect();
+        distFilter.disconnect();
+      } catch (e) {}
+    }, 450);
+
     if (weaponType === 'ar') {
       // KAVACH-AR: snappy crack + punchy transient
       this._createTransient(t, 160, 45, 0.12, gunGain);

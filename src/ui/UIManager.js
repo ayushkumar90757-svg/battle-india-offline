@@ -207,10 +207,18 @@ export class UIManager {
 
   setPauseVisible(visible) {
     this.pauseMenu.style.display = visible ? 'flex' : 'none';
+    const touchLayer = document.getElementById('touch-controls-layer');
+    if (touchLayer) {
+      touchLayer.style.display = visible ? 'none' : 'block';
+    }
   }
 
   showMatchResults(isVictory, rank, kills, damage, survivalTimeSeconds) {
     this.resultsModal.style.display = 'flex';
+    const touchLayer = document.getElementById('touch-controls-layer');
+    if (touchLayer) {
+      touchLayer.style.display = 'none';
+    }
 
     if (isVictory) {
       this.resultTitle.textContent = 'CHAMPION OF BHARAT!';

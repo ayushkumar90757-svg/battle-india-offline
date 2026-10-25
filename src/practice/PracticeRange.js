@@ -114,6 +114,21 @@ export class PracticeRange {
 
   cleanup() {
     this.targetObjects.forEach(obj => {
+      obj.traverse(child => {
+        if (child.isMesh) {
+          child.geometry?.dispose();
+          if (child.material) {
+            if (Array.isArray(child.material)) {
+              child.material.forEach(m => m.dispose());
+            } else {
+              child.material.dispose();
+            }
+          }
+        } else if (child.isSprite) {
+          child.material?.map?.dispose();
+          child.material?.dispose();
+        }
+      });
       this.scene.remove(obj);
     });
     this.targets = [];

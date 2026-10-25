@@ -6,9 +6,15 @@ import * as THREE from 'three';
 export class IslandMap {
   constructor(scene) {
     this.scene = scene;
-    this.colliders = []; // Static obstacle colliders { box: THREE.Box3, min, max, type }
+    this.colliders = []; // Static obstacle colliders { box: THREE.Box3, center: THREE.Vector3, radius: number }
+    this.obstacleMeshes = []; // Meshes for bullet occlusion and line-of-sight raycasts
     this.lootSpawns = []; // Positions for weapon / ammo / medkit pickups
     this.botWaypoints = []; // Strategic patrol waypoints across the island
+
+    // Pre-allocated collision query objects (Zero GC)
+    this._queryBox = new THREE.Box3();
+    this._queryMin = new THREE.Vector3();
+    this._queryMax = new THREE.Vector3();
 
     this._initMaterials();
     this._buildTerrain();
@@ -116,13 +122,28 @@ export class IslandMap {
     this.scene.add(waterMesh);
   }
 
+  _addObstacle(mesh) {
+    this.scene.add(mesh);
+    this.obstacleMeshes.push(mesh);
+    return mesh;
+  }
+
+  getObstacleMeshes() {
+    return this.obstacleMeshes;
+  }
+
   _addBoxCollider(center, size, isPassable = false) {
     const box = new THREE.Box3(
       new THREE.Vector3(center.x - size.x / 2, center.y - size.y / 2, center.z - size.z / 2),
       new THREE.Vector3(center.x + size.x / 2, center.y + size.y / 2, center.z + size.z / 2)
     );
+    const radius = Math.max(size.x, size.z) * 0.75;
     if (!isPassable) {
-      this.colliders.push(box);
+      this.colliders.push({
+        box,
+        center: new THREE.Vector3(center.x, center.y, center.z),
+        radius
+      });
     }
     return box;
   }
@@ -141,7 +162,7 @@ export class IslandMap {
       this.mats.metalGrey
     );
     helipad.position.set(baseX, baseY + 0.15, baseZ);
-    this.scene.add(helipad);
+    this._addObstacle(helipad);
 
     // Watchtower 2-story
     const towerX = baseX - 12;
@@ -154,19 +175,19 @@ export class IslandMap {
     legOffsets.forEach(([ox, oz]) => {
       const leg = new THREE.Mesh(legGeom, this.mats.metalGrey);
       leg.position.set(towerX + ox, towerY + 3.75, towerZ + oz);
-      this.scene.add(leg);
+      this._addObstacle(leg);
     });
 
     // Tower Platform
     const platform = new THREE.Mesh(new THREE.BoxGeometry(6.5, 0.4, 6.5), this.mats.wood);
     platform.position.set(towerX, towerY + 7.5, towerZ);
-    this.scene.add(platform);
+    this._addObstacle(platform);
     this._addBoxCollider(new THREE.Vector3(towerX, towerY + 3.5, towerZ), new THREE.Vector3(6, 7, 6));
 
     // Tower Guard Rails & Roof
     const roof = new THREE.Mesh(new THREE.BoxGeometry(7, 0.3, 7), this.mats.metalGrey);
     roof.position.set(towerX, towerY + 10.2, towerZ);
-    this.scene.add(roof);
+    this._addObstacle(roof);
 
     // High sniper loot atop watchtower
     this.lootSpawns.push({
@@ -189,13 +210,13 @@ export class IslandMap {
     const sandbagGeom = new THREE.BoxGeometry(2.4, 0.7, 0.7);
     const s1 = new THREE.Mesh(sandbagGeom, this.mats.sandbag);
     s1.position.set(x, y + 0.35, z);
-    this.scene.add(s1);
+    this._addObstacle(s1);
     this._addBoxCollider(s1.position, new THREE.Vector3(2.4, 0.8, 0.7));
 
     const s2 = new THREE.Mesh(sandbagGeom, this.mats.sandbag);
     s2.rotation.y = Math.PI / 2;
     s2.position.set(x - 1.0, y + 0.35, z + 1.0);
-    this.scene.add(s2);
+    this._addObstacle(s2);
     this._addBoxCollider(s2.position, new THREE.Vector3(0.7, 0.8, 2.4));
   }
 
@@ -206,7 +227,7 @@ export class IslandMap {
       this.mats.wood
     );
     crate.position.set(x, y + size / 2, z);
-    this.scene.add(crate);
+    this._addObstacle(crate);
     this._addBoxCollider(crate.position, new THREE.Vector3(size, size, size));
 
     if (loot) {
@@ -280,7 +301,7 @@ export class IslandMap {
     roof.position.set(0, height + 1.1, 0);
     group.add(roof);
 
-    this.scene.add(group);
+    this._addObstacle(group);
 
     // Solid wall colliders
     this._addBoxCollider(new THREE.Vector3(x, y + height / 2, z), new THREE.Vector3(width * 0.9, height, depth * 0.9));
@@ -311,7 +332,7 @@ export class IslandMap {
       this.mats.metalGrey
     );
     warehouse.position.set(wx, wy + height / 2, wz);
-    this.scene.add(warehouse);
+    this._addObstacle(warehouse);
     this._addBoxCollider(warehouse.position, new THREE.Vector3(width, height, depth));
 
     // Stacks of Shipping Containers outside
@@ -327,7 +348,7 @@ export class IslandMap {
       const cMesh = new THREE.Mesh(new THREE.BoxGeometry(3.0, 2.8, 6.5), c.color);
       cMesh.rotation.y = c.rot;
       cMesh.position.set(c.x, cy + 1.4, c.z);
-      this.scene.add(cMesh);
+      this._addObstacle(cMesh);
       this._addBoxCollider(cMesh.position, new THREE.Vector3(3.2, 3.0, 6.7));
 
       this.lootSpawns.push({
@@ -360,7 +381,7 @@ export class IslandMap {
         this.mats.rock
       );
       pillar.position.set(px, py + 2.25, pz);
-      this.scene.add(pillar);
+      this._addObstacle(pillar);
       this._addBoxCollider(pillar.position, new THREE.Vector3(1.5, 4.5, 1.5));
     });
 
@@ -407,7 +428,7 @@ export class IslandMap {
       const scale = 0.8 + rng(i * 3.1) * 0.5;
       tree.scale.set(scale, scale, scale);
 
-      this.scene.add(tree);
+      this._addObstacle(tree);
       this._addBoxCollider(new THREE.Vector3(x, y + 1.5, z), new THREE.Vector3(0.8, 3.5, 0.8));
     }
 
@@ -427,7 +448,7 @@ export class IslandMap {
       rock.rotation.set(rng(i), rng(i * 2), rng(i * 3));
       rock.position.set(x, y + scale * 0.5, z);
 
-      this.scene.add(rock);
+      this._addObstacle(rock);
       this._addBoxCollider(rock.position, new THREE.Vector3(scale * 1.6, scale * 1.2, scale * 1.6));
     }
   }
@@ -479,15 +500,25 @@ export class IslandMap {
     this.scene.add(roadMesh);
   }
 
-  // Fast collision check against world obstacles
+  // High-performance collision check with Manhattan distance cull (Zero GC)
   checkCollision(position, radius = 0.4) {
-    const playerBox = new THREE.Box3(
-      new THREE.Vector3(position.x - radius, position.y + 0.2, position.z - radius),
-      new THREE.Vector3(position.x + radius, position.y + 1.8, position.z + radius)
-    );
+    this._queryMin.set(position.x - radius, position.y + 0.2, position.z - radius);
+    this._queryMax.set(position.x + radius, position.y + 1.8, position.z + radius);
+    this._queryBox.min = this._queryMin;
+    this._queryBox.max = this._queryMax;
+
+    const px = position.x;
+    const pz = position.z;
 
     for (let i = 0; i < this.colliders.length; i++) {
-      if (this.colliders[i].intersectsBox(playerBox)) {
+      const col = this.colliders[i];
+      if (
+        Math.abs(col.center.x - px) > (col.radius + radius) ||
+        Math.abs(col.center.z - pz) > (col.radius + radius)
+      ) {
+        continue;
+      }
+      if (col.box.intersectsBox(this._queryBox)) {
         return true;
       }
     }

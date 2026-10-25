@@ -141,6 +141,13 @@ export class HUD {
   }
 
   addKillFeedEntry(killer, victim, weaponName) {
+    if (!this.killFeedContainer) return;
+
+    // Cap at max 5 visible killfeed entries to prevent DOM bloating
+    while (this.killFeedContainer.children.length >= 5) {
+      this.killFeedContainer.removeChild(this.killFeedContainer.firstChild);
+    }
+
     const entry = document.createElement('div');
     entry.className = 'kill-feed-entry';
 

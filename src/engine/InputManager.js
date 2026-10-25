@@ -124,7 +124,14 @@ export class InputManager {
     });
 
     window.addEventListener('mousedown', e => {
-      if (e.target.closest('#ui-layer') && !e.target.closest('#hud-clickthrough')) {
+      if (
+        e.target.closest('button') ||
+        e.target.closest('select') ||
+        e.target.closest('input') ||
+        e.target.closest('.modal-overlay') ||
+        e.target.closest('#main-menu') ||
+        e.target.closest('#minimap-canvas')
+      ) {
         return; // UI click, ignore game input
       }
 

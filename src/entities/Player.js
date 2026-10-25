@@ -41,6 +41,15 @@ export class Player {
     this.cameraHeight = 1.65;
     this.shoulderOffset = 0.65;
 
+    // Pre-allocated vectors to prevent GC allocations
+    this._vForward = new THREE.Vector3();
+    this._vRight = new THREE.Vector3();
+    this._vMoveDir = new THREE.Vector3();
+    this._vTargetLookAt = new THREE.Vector3();
+    this._vDesiredCamPos = new THREE.Vector3();
+    this._vCamOffset = new THREE.Vector3();
+    this._camRaycaster = new THREE.Raycaster();
+
     // Medkit usage state
     this.isHealing = false;
     this.healProgress = 0;
@@ -67,8 +76,13 @@ export class Player {
     this.isAlive = true;
     this.kills = 0;
     this.damageDealt = 0;
+    this.isHealing = false;
+    this.healProgress = 0;
+    this.yaw = 0;
+    this.pitch = 0.05;
+    this.characterModel.deathProgress = 0;
     this.characterModel.isDead = false;
-    this.characterModel.group.rotation.x = 0;
+    this.characterModel.group.rotation.set(0, 0, 0);
     this.characterModel.group.position.set(this.position.x, this.position.y, this.position.z);
   }
 
@@ -224,25 +238,43 @@ export class Player {
     // Eye pivot origin at player shoulder
     const sinYaw = Math.sin(this.yaw);
     const cosYaw = Math.cos(this.yaw);
-    const shoulderRight = new THREE.Vector3(cosYaw, 0, -sinYaw).multiplyScalar(adsShoulder);
+    const shoulderRightX = cosYaw * adsShoulder;
+    const shoulderRightZ = -sinYaw * adsShoulder;
 
-    const targetLookAt = new THREE.Vector3(
-      this.position.x + shoulderRight.x,
+    const targetLookAt = this._vTargetLookAt.set(
+      this.position.x + shoulderRightX,
       this.position.y + adsHeight,
-      this.position.z + shoulderRight.z
+      this.position.z + shoulderRightZ
     );
 
     // Camera offset position behind shoulder based on yaw and pitch
     const cosPitch = Math.cos(this.pitch);
     const sinPitch = Math.sin(this.pitch);
 
-    const camOffset = new THREE.Vector3(
-      sinYaw * cosPitch * adsDist,
-      sinPitch * adsDist,
-      cosYaw * cosPitch * adsDist
-    );
+    const camOffsetX = sinYaw * cosPitch;
+    const camOffsetY = sinPitch;
+    const camOffsetZ = cosYaw * cosPitch;
 
-    const desiredCamPos = targetLookAt.clone().add(camOffset);
+    let currentDist = adsDist;
+
+    // Camera wall collision prevention: raycast backwards from shoulder to desired camera pos
+    const obstacles = this.map ? this.map.getObstacleMeshes() : [];
+    if (obstacles.length > 0) {
+      this._vCamOffset.set(camOffsetX, camOffsetY, camOffsetZ);
+      this._camRaycaster.set(targetLookAt, this._vCamOffset);
+      this._camRaycaster.far = adsDist;
+
+      const hits = this._camRaycaster.intersectObjects(obstacles, true);
+      if (hits.length > 0 && hits[0].distance < adsDist) {
+        currentDist = Math.max(0.65, hits[0].distance - 0.25);
+      }
+    }
+
+    const desiredCamPos = this._vDesiredCamPos.set(
+      targetLookAt.x + camOffsetX * currentDist,
+      targetLookAt.y + camOffsetY * currentDist,
+      targetLookAt.z + camOffsetZ * currentDist
+    );
 
     // Prevent camera clipping through ground
     const terrainHeightAtCam = this.map.getTerrainHeight(desiredCamPos.x, desiredCamPos.z);

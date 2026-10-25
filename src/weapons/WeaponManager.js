@@ -38,16 +38,28 @@ export class WeaponManager {
     this.activeModel = null;
     this.modelCache = {};
 
-    // Tracer line pool
+    // High performance pre-allocated tracer pool (Zero GC)
+    this.tracerPool = [];
     this.activeTracers = [];
     this.tracerMaterial = new THREE.MeshBasicMaterial({
       color: 0xffe600,
       transparent: true,
       opacity: 0.95
     });
+    this.tracerGeom = new THREE.CylinderGeometry(0.015, 0.015, 1, 4);
+    this.tracerGeom.rotateX(Math.PI / 2);
 
-    // Impact spark pool
-    this.activeSparks = [];
+    for (let i = 0; i < 24; i++) {
+      const mesh = new THREE.Mesh(this.tracerGeom, this.tracerMaterial);
+      mesh.visible = false;
+      this.tracerPool.push(mesh);
+    }
+
+    // Reusable math vectors to prevent GC allocations
+    this._vStartPoint = new THREE.Vector3();
+    this._vEndPoint = new THREE.Vector3();
+    this._vHitPoint = new THREE.Vector3();
+    this._vScreenCoord = new THREE.Vector2();
 
     // Raycaster for hit detection
     this.raycaster = new THREE.Raycaster();
@@ -77,11 +89,12 @@ export class WeaponManager {
   }
 
   switchSlot(index, force = false) {
-    if (!force && (index === this.activeSlotIndex || this.isReloading)) return;
+    if (!force && index === this.activeSlotIndex) return;
     if (index < 0 || index >= this.slots.length) return;
     if (!this.slots[index]) return;
 
     this.activeSlotIndex = index;
+    // Always cancel active reload when switching weapons (tactical weapon swap)
     this.isReloading = false;
     this.reloadProgress = 0;
 
@@ -160,7 +173,7 @@ export class WeaponManager {
     return true;
   }
 
-  fire(camera, shootTargets = [], isMoving = false) {
+  fire(camera, shootTargets = [], isMoving = false, obstacleTargets = []) {
     const slot = this.getActiveSlot();
     const config = this.getActiveConfig();
     if (!this.canFire()) {
@@ -196,14 +209,18 @@ export class WeaponManager {
     const hitResults = [];
     const pellets = config.pellets || 1;
 
+    // Combine shoot targets (bots) and obstacle targets (walls, crates, terrain) for occlusion
+    const allQueryTargets = obstacleTargets.length > 0
+      ? [...shootTargets, ...obstacleTargets]
+      : shootTargets;
+
     for (let p = 0; p < pellets; p++) {
       // Calculate ray direction with spread bloom
       const spreadX = (Math.random() - 0.5) * baseSpread;
       const spreadY = (Math.random() - 0.5) * baseSpread;
 
-      // Screen center (0, 0) + spread
-      const screenCoord = new THREE.Vector2(spreadX, spreadY);
-      this.raycaster.setFromCamera(screenCoord, camera);
+      this._vScreenCoord.set(spreadX, spreadY);
+      this.raycaster.setFromCamera(this._vScreenCoord, camera);
 
       let hitPoint = this.raycaster.ray.origin.clone().add(
         this.raycaster.ray.direction.clone().multiplyScalar(config.range)
@@ -211,13 +228,13 @@ export class WeaponManager {
       let hitTarget = null;
       let isHeadshot = false;
 
-      if (shootTargets.length > 0) {
-        const intersects = this.raycaster.intersectObjects(shootTargets, true);
+      if (allQueryTargets.length > 0) {
+        const intersects = this.raycaster.intersectObjects(allQueryTargets, true);
         if (intersects.length > 0) {
           const firstHit = intersects[0];
           hitPoint = firstHit.point;
 
-          // Check if object belongs to a bot or target
+          // Check if object belongs to an entity or a static world obstacle
           let obj = firstHit.object;
           let entity = null;
           while (obj) {
@@ -228,6 +245,7 @@ export class WeaponManager {
             obj = obj.parent;
           }
 
+          // If entity is present and alive, it's a valid target
           if (entity && entity.takeDamage) {
             hitTarget = entity;
             // Check if head hit
@@ -235,6 +253,7 @@ export class WeaponManager {
               isHeadshot = true;
             }
           }
+          // Otherwise it's a wall/terrain obstacle that occludes bullets
         }
       }
 
@@ -274,7 +293,7 @@ export class WeaponManager {
 
   _spawnTracer(endPoint) {
     const muzzle = this.activeModel?.getObjectByName('muzzlePoint');
-    const startPoint = new THREE.Vector3();
+    const startPoint = this._vStartPoint;
     if (muzzle) {
       muzzle.getWorldPosition(startPoint);
     } else {
@@ -284,22 +303,29 @@ export class WeaponManager {
     const dist = startPoint.distanceTo(endPoint);
     if (dist < 0.5) return;
 
-    // Fast cylinder tracer
-    const geom = new THREE.CylinderGeometry(0.012, 0.012, Math.min(dist, 14), 4);
-    geom.rotateX(Math.PI / 2);
-    const tracer = new THREE.Mesh(geom, this.tracerMaterial);
+    // Borrow mesh from pre-allocated tracer pool (Zero GC)
+    let tracerMesh;
+    if (this.tracerPool.length > 0) {
+      tracerMesh = this.tracerPool.pop();
+    } else {
+      tracerMesh = new THREE.Mesh(this.tracerGeom, this.tracerMaterial);
+    }
 
-    const midPoint = new THREE.Vector3().addVectors(startPoint, endPoint).multiplyScalar(0.5);
-    tracer.position.copy(startPoint);
-    tracer.lookAt(endPoint);
+    tracerMesh.visible = true;
+    tracerMesh.position.copy(startPoint);
+    tracerMesh.lookAt(endPoint);
+    tracerMesh.scale.set(1, 1, Math.min(dist, 12));
 
-    this.weaponContainer.parent?.add(tracer);
+    if (!tracerMesh.parent) {
+      this.weaponContainer.parent?.add(tracerMesh);
+    }
+
     this.activeTracers.push({
-      mesh: tracer,
-      start: startPoint,
-      end: endPoint,
+      mesh: tracerMesh,
+      start: startPoint.clone(),
+      end: endPoint.clone(),
       progress: 0,
-      speed: 380
+      totalDist: dist
     });
   }
 
@@ -339,16 +365,15 @@ export class WeaponManager {
     // Update active bullet tracers
     for (let i = this.activeTracers.length - 1; i >= 0; i--) {
       const tracer = this.activeTracers[i];
-      tracer.progress += delta * 12.0;
+      tracer.progress += delta * 14.0;
       if (tracer.progress >= 1.0) {
-        if (tracer.mesh.parent) {
-          tracer.mesh.parent.remove(tracer.mesh);
-        }
-        tracer.mesh.geometry.dispose();
+        tracer.mesh.visible = false;
+        this.tracerPool.push(tracer.mesh);
         this.activeTracers.splice(i, 1);
       } else {
         tracer.mesh.position.lerpVectors(tracer.start, tracer.end, tracer.progress);
-        tracer.mesh.scale.set(1, 1, 1 - tracer.progress * 0.4);
+        const remainingScale = Math.min(tracer.totalDist, 12) * (1 - tracer.progress * 0.4);
+        tracer.mesh.scale.set(1, 1, Math.max(0.1, remainingScale));
       }
     }
 

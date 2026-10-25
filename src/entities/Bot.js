@@ -124,6 +124,43 @@ export class Bot {
     this.hpTexture.needsUpdate = true;
   }
 
+  dispose() {
+    if (this.hpTexture) {
+      this.hpTexture.dispose();
+    }
+    if (this.hpSprite && this.hpSprite.material) {
+      this.hpSprite.material.dispose();
+    }
+  }
+
+  hasLineOfSight(target) {
+    if (!this.map || !target) return true;
+    const obstacles = this.map.getObstacleMeshes();
+    if (!obstacles || obstacles.length === 0) return true;
+
+    if (!Bot._losRaycaster) {
+      Bot._losRaycaster = new THREE.Raycaster();
+      Bot._vEye = new THREE.Vector3();
+      Bot._vTargetEye = new THREE.Vector3();
+      Bot._vDir = new THREE.Vector3();
+    }
+
+    Bot._vEye.set(this.position.x, this.position.y + 1.4, this.position.z);
+    Bot._vTargetEye.set(target.position.x, target.position.y + 1.4, target.position.z);
+    Bot._vDir.subVectors(Bot._vTargetEye, Bot._vEye);
+    const distToTarget = Bot._vDir.length();
+    Bot._vDir.normalize();
+
+    Bot._losRaycaster.set(Bot._vEye, Bot._vDir);
+    Bot._losRaycaster.far = distToTarget;
+
+    const hits = Bot._losRaycaster.intersectObjects(obstacles, true);
+    if (hits.length > 0 && hits[0].distance < distToTarget - 0.6) {
+      return false; // Occluded by solid obstacle
+    }
+    return true;
+  }
+
   spawnAt(x, z) {
     const y = this.map.getTerrainHeight(x, z);
     this.position.set(x, y, z);
@@ -322,9 +359,10 @@ export class Bot {
       this.soundManager.playGunshot(this.weaponConfig.type, true, distRatio);
     }
 
-    // Calculate hit based on accuracy and distance
+    // Calculate hit based on accuracy, distance, and obstacle line of sight
+    const hasSight = this.hasLineOfSight(target);
     const hitChance = Math.max(0.15, this.accuracy * (1.0 - (dist / this.weaponConfig.range) * 0.5));
-    if (Math.random() < hitChance) {
+    if (hasSight && Math.random() < hitChance) {
       const damage = Math.round(this.weaponConfig.damage * (0.8 + Math.random() * 0.4));
       target.takeDamage(damage, this, 'bullet');
     }

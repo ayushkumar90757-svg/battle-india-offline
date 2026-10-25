@@ -222,11 +222,13 @@ class BattleIndiaApp {
       const shootableTargets = this.gameMode === 'royale'
         ? this.botManager.getShootableObjects()
         : this.practiceRange ? this.practiceRange.getShootableObjects() : [];
+      const worldObstacles = this.map ? this.map.getObstacleMeshes() : [];
 
       const shotResult = this.weaponManager.fire(
         this.engine.camera,
         shootableTargets,
-        isMoving
+        isMoving,
+        worldObstacles
       );
 
       if (shotResult && shotResult.hits.length > 0) {
