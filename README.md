@@ -1,6 +1,18 @@
-# 🇮🇳 BATTLE INDIA OFFLINE
+# 🇮🇳 BATTLE INDIA OFFLINE (v1.1.0)
 
 A complete, playable 3D offline Battle Royale shooting game inspired by the fast-paced gameplay of Free Fire, featuring original characters, maps, Indian tactical weapons, responsive controls, and high-performance offline AI bots.
+
+[![Live Web Game](https://img.shields.io/badge/Play%20Live-GitHub%20Pages-brightgreen?logo=github)](https://ayushkumar90757-svg.github.io/battle-india-offline/)
+[![Download Android APK](https://img.shields.io/badge/Download%20APK-v1.1.0-orange?logo=android)](https://github.com/ayushkumar90757-svg/battle-india-offline/releases/tag/v1.1.0)
+[![Version](https://img.shields.io/badge/Version-1.1.0-blue)](https://github.com/ayushkumar90757-svg/battle-india-offline/releases)
+
+---
+
+## 📥 Quick Downloads & Play
+
+- **🎮 Play Online Instantly**: [https://ayushkumar90757-svg.github.io/battle-india-offline/](https://ayushkumar90757-svg.github.io/battle-india-offline/)
+- **📱 Download Android APK (v1.1.0)**: [Battle-India-Offline.apk](https://github.com/ayushkumar90757-svg/battle-india-offline/releases/download/v1.1.0/Battle-India-Offline.apk)
+- **📦 All Releases**: [https://github.com/ayushkumar90757-svg/battle-india-offline/releases](https://github.com/ayushkumar90757-svg/battle-india-offline/releases)
 
 ---
 
